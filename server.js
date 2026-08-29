@@ -6,6 +6,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
 import participantRoutes from './routes/partcipant_routes.js'
+import organizerRoutes from './routes/organizer_routes.js'
 
 dotenv.config()
 
@@ -13,12 +14,13 @@ const app = express()
 const PORT = process.env.PORT || 5000
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: true,
   credentials: true
 }))
 app.use(express.json())
 
 app.use('/api/participant', participantRoutes)
+app.use('/api/organizer', organizerRoutes)
 
 app.get('/', (req, res) => {
   res.send('Catalyst Backend Server is running!')
