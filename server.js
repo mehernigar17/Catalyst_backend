@@ -5,8 +5,10 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
+import cookieParser from 'cookie-parser'
 import participantRoutes from './routes/partcipant_routes.js'
 import organizerRoutes from './routes/organizer_routes.js'
+import log from './middlewares/logger.js'
 
 dotenv.config()
 
@@ -14,10 +16,12 @@ const app = express()
 const PORT = process.env.PORT || 5000
 
 app.use(cors({
-  origin: true,
+  origin: process.env.ALLOWED_ORIGIN,
   credentials: true
 }))
 app.use(express.json())
+app.use(cookieParser())
+app.use(log)
 
 app.use('/api/participant', participantRoutes)
 app.use('/api/organizer', organizerRoutes)

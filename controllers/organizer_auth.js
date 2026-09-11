@@ -1,64 +1,98 @@
-﻿import Organizer from '../models/organizer_user.js'
-import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
+﻿import Organizer from "../models/organizer_user.js";
+import { hashPassword, comparePassword } from "../utils/helpers.js";
+import jwt from "jsonwebtoken";
+
+const lifetime = "3600000";
 
 export const registerOrganizer = async (req, res) => {
   try {
-    const { organizationName, organizationType, contactPerson, email, password } = req.body
+    const { organizationName, organizationType, contactPerson, email, password } = req.body;
 
     if (!organizationName || !organizationType || !contactPerson || !email || !password) {
-      return res.status(400).json({ message: 'Please fill in all required fields' })
+      return res.status(400).json({ message: "Please fill in all required fields" });
     }
 
-    const existingOrganizer = await Organizer.findOne({ email })
+    const existingOrganizer = await Organizer.findOne({ email });
     if (existingOrganizer) {
-      return res.status(400).json({ message: 'An organizer with this email already exists' })
+      return res.status(400).json({ message: "An organizer with this email already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
-    const organizer = await Organizer.create({
+    const hashedPassword = await hashPassword(password);
+    await Organizer.create({
       ...req.body,
-      password: hashedPassword
-    })
+      password: hashedPassword,
+    });
 
-    const token = jwt.sign(
-      { id: organizer._id, role: 'organizer' },
-      process.env.JWT_SECRET || 'catalyst_jwt_secret',
-      { expiresIn: '7d' }
-    )
-
-    res.status(201).json({ token, organizer })
+    return res.status(201).json({ message: "Organizer registered successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message });
   }
-}
+};
 
 export const loginOrganizer = async (req, res) => {
   try {
-    const { email, password } = req.body
+    const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' })
+      return res.status(400).json({ message: "Please provide email and password" });
     }
 
-    const organizer = await Organizer.findOne({ email })
+    const organizer = await Organizer.findOne({ email });
     if (!organizer) {
-      return res.status(404).json({ message: 'Organizer account not found' })
+      return res.status(404).json({ message: "Organizer account not found" });
     }
 
-    const isMatch = await bcrypt.compare(password, organizer.password)
+    const isMatch = await comparePassword(password, organizer.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid password' })
+      return res.status(400).json({ message: "Invalid password" });
     }
+
+    organizer.password = undefined;
+    organizer.__v = undefined;
 
     const token = jwt.sign(
-      { id: organizer._id, role: 'organizer' },
-      process.env.JWT_SECRET || 'catalyst_jwt_secret',
-      { expiresIn: '7d' }
-    )
+      { id: organizer._id, role: "organizer" },
+      process.env.JWT_SECRET,
+      { expiresIn: lifetime }
+    );
 
-    res.status(200).json({ token, organizer })
+    res.cookie("token", token, {
+      maxAge: lifetime,
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+    });
+
+    return res.status(200).json(organizer);
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    return res.status(500).json({ message: error.message });
   }
-}
+};
+
+export const logoutOrganizer = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+  });
+  return res.status(200).json({ message: "Logout successful" });
+};
+
+export const getOrganizerProfile = async (req, res) => {
+  try {
+    const { token } = req.cookies;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== "organizer") {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    const organizer = await Organizer.findById(decoded.id).select(["-password", "-__v"]);
+    if (!organizer) {
+      return res.status(404).json({ message: "Organizer not found" });
+    }
+    return res.status(200).json(organizer);
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+};
