@@ -4,6 +4,14 @@ import jwt from "jsonwebtoken";
 
 const lifetime = "3600000";
 
+const cookieOptions = {
+  maxAge: Number(lifetime),
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  path: "/",
+};
+
 export const registerOrganizer = async (req, res) => {
   try {
     const { organizationName, organizationType, contactPerson, email, password } = req.body;
@@ -56,13 +64,7 @@ export const loginOrganizer = async (req, res) => {
       { expiresIn: lifetime }
     );
 
-    res.cookie("token", token, {
-      maxAge: lifetime,
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      path: "/",
-    });
+    res.cookie("token", token, cookieOptions);
 
     return res.status(200).json(organizer);
   } catch (error) {
@@ -71,12 +73,7 @@ export const loginOrganizer = async (req, res) => {
 };
 
 export const logoutOrganizer = (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    path: "/",
-  });
+  res.clearCookie("token", cookieOptions);
   return res.status(200).json({ message: "Logout successful" });
 };
 
