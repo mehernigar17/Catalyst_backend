@@ -9,6 +9,7 @@ email:{type:String,required:true},
 education:String,
 password:{type:String,required:true},
 interests:[String],
+bookmarks:[{ type: mongoose.Schema.Types.ObjectId, ref: 'event' }],
 
 
 },{timestamps:true})
