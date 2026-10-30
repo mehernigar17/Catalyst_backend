@@ -22,7 +22,7 @@ const fileFilter = (req, file, cb) => {
   if (allowed.includes(file.mimetype)) {
     cb(null, true)
   } else {
-    cb(new Error('Only JPEG, PNG, WEBP, and GIF images are allowed'), false)
+    cb(new Error('Only JPEG, PNG,  WEBP,  and GIF images are allowed'), false)
   }
 }
 
