@@ -1,6 +1,8 @@
 import mongoose from 'mongoose'
 const participantSchema=new mongoose.Schema({
 
+    
+
 fullname:{type:String,required:true},
 phoneNumber:{type:String,
     required:true
@@ -13,5 +15,7 @@ bookmarks:[{ type: mongoose.Schema.Types.ObjectId, ref: 'event' }],
 
 
 },{timestamps:true})
+
+
 
 export default  mongoose.model('participant',participantSchema)
